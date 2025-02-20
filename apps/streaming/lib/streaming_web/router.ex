@@ -2,7 +2,7 @@ defmodule StreamingWeb.Router do
   use StreamingWeb, :router
 
   pipeline :browser do
-    plug :accepts, ["html"]
+    plug :accepts, ["html", "video/*"]
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {StreamingWeb.Layouts, :root}
@@ -17,7 +17,7 @@ defmodule StreamingWeb.Router do
   scope "/", StreamingWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", Home
   end
 
   # Other scopes may use custom stacks.
