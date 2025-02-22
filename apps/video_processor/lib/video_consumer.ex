@@ -12,22 +12,21 @@ defmodule VideoProcessor.VideoConsumer do
   end
 
   def handle_events(events, _from, state) do
-    # Wait for a second.
-    Process.sleep(1000)
-
-    # Inspect the events.
-    IO.inspect(events)
-
     Enum.map(events, fn event ->
-      IO.puts("sending event: ")
-      IO.inspect(event)
-
+      IO.puts("processing #{event.file_name}, #{event.current_chunk} in #{inspect(self())}")
+      # simulate processing
+      Process.sleep(1000)
       GenServer.cast(Saver, {:save_chunk, event})
 
       Node.list()
+      |> Enum.reject(&(&1 === :streaming_node_1@localhost))
       |> Enum.map(
-        &:rpc.call(&1, GenServer, :cast, [{VideoProcessor.Saver, {:save_chunk, event}}])
+        &:rpc.call(&1, Elixir.GenServer, :cast, [
+          Elixir.VideoProcessor.Saver,
+          {:save_chunk, event}
+        ])
       )
+      |> IO.inspect()
     end)
 
     {:noreply, [], state}
