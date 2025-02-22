@@ -26,7 +26,6 @@ defmodule VideoProcessor.VideoConsumer do
           {:save_chunk, event}
         ])
       )
-      |> IO.inspect()
     end)
 
     {:noreply, [], state}
