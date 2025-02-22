@@ -13,7 +13,7 @@ defmodule VideoProcessor.VideoProducer do
 
   @impl true
   def init(:ok) do
-    {:producer, {:queue.new(), 0}, dispatcher: GenStage.DemandDispatcher}
+    {:producer, {:queue.new(), 0}, dispatcher: GenStage.BroadcastDispatcher}
   end
 
   @doc "Sends an event and returns only after the event is dispatched."
