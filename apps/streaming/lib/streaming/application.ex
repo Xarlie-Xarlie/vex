@@ -17,8 +17,11 @@ defmodule Streaming.Application do
       # Start a worker by calling: Streaming.Worker.start_link(arg)
       # {Streaming.Worker, arg},
       # Start to serve requests, typically the last entry
-      StreamingWeb.Endpoint
+      StreamingWeb.Endpoint,
+      Streaming.LoadBalancer
     ]
+
+    connect_to_genstage_nodes()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
@@ -32,5 +35,11 @@ defmodule Streaming.Application do
   def config_change(changed, _new, removed) do
     StreamingWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  defp connect_to_genstage_nodes do
+    Enum.each(Application.get_env(:streaming, :genstage_nodes), fn node ->
+      Node.connect(String.to_atom(node))
+    end)
   end
 end

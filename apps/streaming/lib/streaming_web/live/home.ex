@@ -1,6 +1,8 @@
 defmodule StreamingWeb.Home do
   use StreamingWeb, :live_view
 
+  alias Streaming.LoadBalancer
+
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     {:ok,
@@ -109,17 +111,23 @@ defmodule StreamingWeb.Home do
       file: file
     } = socket.assigns
 
-    file =
-      if is_nil(file),
-        do: File.open!(upload_file_path <> file_name, [:binary, :append]),
-        else: file
-
     binary_data = :erlang.list_to_binary(chunk)
 
-    IO.binwrite(file, binary_data)
+    node = LoadBalancer.get_next_node()
+
+    if is_nil(file) do
+      :rpc.call(node, Elixir.GenServer, :cast, [
+        Elixir.VideoProcessor.Saver,
+        {:assign_file, %{file_name: upload_file_path <> file_name, total_chunks: chunks_qty}}
+      ])
+    end
+
+    :rpc.call(node, Elixir.VideoProcessor.VideoProducer, :sync_notify, [
+      %{file_name: upload_file_path <> file_name, current_chunk: chunks, chunk: binary_data}
+    ])
 
     socket
-    |> assign(file: file)
+    |> assign(file: upload_file_path <> file_name)
     |> assign(chunks: chunks + 1)
     |> assign(progress: chunks * 100 / chunks_qty)
     |> assign(uploading: true)
@@ -128,9 +136,7 @@ defmodule StreamingWeb.Home do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("upload_complete", _, %{assigns: %{file: file}} = socket) do
-    File.close(file)
-
+  def handle_event("upload_complete", _, socket) do
     socket
     |> assign(progress: 0, chunks: 1, file: nil, uploading: false)
     |> put_flash(:info, "File uploaded!")
