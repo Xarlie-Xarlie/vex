@@ -9,7 +9,7 @@ defmodule Streaming.Application do
   def start(_type, _args) do
     children = [
       StreamingWeb.Telemetry,
-      Streaming.Repo,
+      # Streaming.Repo,
       {DNSCluster, query: Application.get_env(:streaming, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Streaming.PubSub},
       # Start the Finch HTTP client for sending emails
