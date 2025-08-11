@@ -1,6 +1,8 @@
 defmodule VideoProcessor.Saver do
   use GenServer
 
+  alias VideoProcessor.HlsConverter
+
   def start_link(state) do
     GenServer.start_link(__MODULE__, state, name: __MODULE__)
   end
@@ -17,6 +19,16 @@ defmodule VideoProcessor.Saver do
   @impl true
   def handle_cast({:remove_processed_file, file_name}, state) do
     File.close(file_name)
+    
+    # Start HLS conversion for the completed file
+    spawn(fn ->
+      case HlsConverter.convert_to_hls(file_name, HlsConverter.create_hls_output_dir(file_name)) do
+        :ok ->
+          IO.puts("HLS conversion completed for #{file_name}")
+        {:error, reason} ->
+          IO.puts("HLS conversion failed for #{file_name}: #{inspect(reason)}")
+      end
+    end)
 
     Map.drop(state, [file_name])
     |> then(&{:noreply, &1})
@@ -48,6 +60,17 @@ defmodule VideoProcessor.Saver do
       %{total_chunks: ^current_chunk, next_chunk: ^current_chunk, buffer: %{}, file: file} ->
         IO.binwrite(file, chunk)
         File.close(file)
+        
+        # Convert the completed file to HLS
+        spawn(fn ->
+          case HlsConverter.convert_to_hls(file_name, HlsConverter.create_hls_output_dir(file_name)) do
+            :ok ->
+              IO.puts("HLS conversion completed for #{file_name}")
+            {:error, reason} ->
+              IO.puts("HLS conversion failed for #{file_name}: #{inspect(reason)}")
+          end
+        end)
+        
         Map.drop(state, [file_name])
 
       %{next_chunk: ^current_chunk, file: file} ->
@@ -74,13 +97,13 @@ defmodule VideoProcessor.Saver do
     GenServer.cast(__MODULE__, {:remove_processed_file, file_name})
   end
 
-  defp save_buffered(%{next_chunk: next_chunk, buffer: buffer} = file_info, file_name) do
+  defp save_buffered(%{next_chunk: next_chunk, buffer: buffer, file: file} = file_info, file_name) do
     case Map.get(buffer, next_chunk) do
       nil ->
         %{file_info | next_chunk: next_chunk + 1}
 
       data ->
-        IO.binwrite(file_name, data)
+        IO.binwrite(file, data)
 
         Map.drop(buffer, [next_chunk])
         |> then(&%{file_info | next_chunk: next_chunk + 1, buffer: &1})
