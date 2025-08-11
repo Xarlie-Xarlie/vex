@@ -16,5 +16,10 @@ config :swoosh, local: false
 # Do not print debug messages in production
 config :logger, level: :info
 
+# Configure Video Processor for production
+config :video_processor,
+  hls_temp_dir: "/tmp/vex_hls_output",
+  hls_segment_duration: 10
+
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.

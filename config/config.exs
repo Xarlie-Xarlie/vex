@@ -70,6 +70,11 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Configure Video Processor
+config :video_processor,
+  hls_temp_dir: System.tmp_dir!() |> Path.join("vex_hls_output"),
+  hls_segment_duration: 10
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
