@@ -22,7 +22,8 @@ defmodule VideoProcessor.Saver do
     
     # Start HLS conversion for the completed file
     spawn(fn ->
-      case HlsConverter.convert_to_hls(file_name, HlsConverter.create_hls_output_dir(file_name)) do
+      output_dir = HlsConverter.create_hls_output_dir(file_name)
+      case HlsConverter.convert_to_hls(file_name, output_dir) do
         :ok ->
           IO.puts("HLS conversion completed for #{file_name}")
         {:error, reason} ->
@@ -31,7 +32,7 @@ defmodule VideoProcessor.Saver do
     end)
 
     Map.drop(state, [file_name])
-    |> then(&{:noreply, &1})
+    {:noreply, Map.drop(state, [file_name])}
   end
 
   @impl true

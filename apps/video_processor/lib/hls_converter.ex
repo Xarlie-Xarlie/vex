@@ -105,7 +105,7 @@ defmodule VideoProcessor.HlsConverter do
   @spec create_hls_output_dir(String.t()) :: String.t()
   def create_hls_output_dir(filename) do
     base_name = Path.basename(filename, Path.extname(filename))
-    timestamp = :os.system_time(:millisecond)
+    timestamp = :os.system_time(:microsecond)
     unique_name = "#{base_name}_#{timestamp}"
     
     output_dir = Path.join([get_temp_hls_dir(), unique_name])
